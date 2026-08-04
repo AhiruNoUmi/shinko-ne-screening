@@ -1,1 +1,30 @@
+name: 新高値スクリーニング 毎日自動更新
 
+on:
+  schedule:
+    - cron: '35 6 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  screening:
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: ライブラリをインストール
+        run: pip install yfinance requests pandas pytz
+      - name: スクリーニング実行
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python scripts/update_dashboard.py
+      - name: ダッシュボードをコミット
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          git add dashboard/index.html
+          git diff --cached --quiet || git commit -m '📈 更新'
+          git push
